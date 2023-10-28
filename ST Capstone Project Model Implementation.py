@@ -16,7 +16,7 @@ model_dir = 'E:/Stuff/University/Assignments/Software Technology/ST Capstone Pro
 model_path = os.path.join(model_dir, model_name)
 
 root = tk.Tk()
-canvas = tk.Canvas(root, width=300, height=300)
+canvas = tk.Canvas(root)
 
 
 def load_existing_model():
@@ -33,8 +33,21 @@ model = load_existing_model()
 
 def display_image(file_path):
     image = Image.open(file_path)
-    displayed_image = ImageTk.PhotoImage(image)  # Create a PhotoImage object from the PIL image
+    canvas_width, canvas_height = canvas.winfo_width(), canvas.winfo_height()
+    image_width, image_height = image.size
+    aspect_ratio = image_width / image_height
+
+    if canvas_width / aspect_ratio < canvas_height:
+        new_width = int(canvas_width)
+        new_height = int(canvas_width / aspect_ratio)
+    else:
+        new_height = int(canvas_height)
+        new_width = int(canvas_height * aspect_ratio)
+
+    image = image.resize((new_width, new_height))
+    displayed_image = ImageTk.PhotoImage(image)
     canvas.create_image(0, 0, image=displayed_image, anchor=tk.NW)
+    predict_image(file_path)
 
 
 def preprocess_image(file_path):
@@ -48,12 +61,10 @@ def preprocess_image(file_path):
 def predict_image(file_path):
     preprocessed_image = preprocess_image(file_path)
     prediction = model.predict(preprocessed_image)
-    print(prediction)
     try:
-        if prediction[0][0] > 0.45:
-            result = "Lion"
-        else:
-            result = "Cheetah"
+        if prediction <= 100:
+            result = "Lion" if prediction[0][0] > 0.45 else "Cheetah"
+
         messagebox.showinfo("Prediction", f"The image is classified as a {result}")
     except ValueError:
         messagebox.showerror("Prediction Error", "Failed to make a prediction.")
@@ -63,7 +74,6 @@ def load_image():
     file_path = filedialog.askopenfilename()
     if file_path:
         display_image(file_path)
-        predict_image(file_path)
 
 
 def exit_program():
